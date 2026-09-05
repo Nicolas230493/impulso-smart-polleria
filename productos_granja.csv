@@ -1,0 +1,40 @@
+codigo,nombre,categoria,precio_venta,precio_costo,stock,unidad_medida
+POL001,Pollo Entero kg,Pollería,4000,2800,20.0,KG
+POL002,Alita kg,Pollería,3000,2000,15.0,KG
+POL003,Pechuga kg,Pollería,9000,6500,10.0,KG
+POL004,Filet de Pechuga kg,Pollería,11000,8000,10.0,KG
+POL005,Parrillero kg,Pollería,4000,2800,15.0,KG
+POL006,Picada de Pollo kg,Pollería,2500,1700,12.0,KG
+POL007,Pata Muslo kg,Pollería,4500,3100,25.0,KG
+POL008,Trozado Común kg,Pollería,4000,2800,15.0,KG
+POL009,Trozado Especial kg,Pollería,4500,3200,15.0,KG
+POL010,Menudo y Carcaza kg,Pollería,1000,600,10.0,KG
+POL011,Caja de Pollo,Pollería,64000,50000,5,UNIDAD
+OFE001,Oferta Pata Muslo (3 kg),Promociones,11000,8000,10,UNIDAD
+OFE002,Oferta Milanesas (2 kg),Promociones,10000,7000,15,UNIDAD
+CMB001,Combo Guisero (1kg Trozado Esp + Fideo Providencia + Puré Tomate),Promociones,6000,4200,20,UNIDAD
+VER001,Tomate Redondo kg,Verdulería,1800,1100,30.0,KG
+VER002,Lechuga kg,Verdulería,1500,900,15.0,KG
+VER003,Papa kg,Verdulería,900,500,50.0,KG
+VER004,Cebolla kg,Verdulería,800,450,40.0,KG
+VER005,Anco / Zapallo kg,Verdulería,1000,600,25.0,KG
+VER006,Zanahoria kg,Verdulería,1200,700,20.0,KG
+VER007,Naranja kg,Verdulería,1500,950,30.0,KG
+VER008,Banana kg,Verdulería,1800,1200,20.0,KG
+VER009,Manzana kg,Verdulería,2000,1300,20.0,KG
+VER010,Pera kg,Verdulería,1800,1100,15.0,KG
+VER011,Limón kg,Verdulería,1200,700,15.0,KG
+VER012,Acelga Atado,Verdulería,1000,600,20,UNIDAD
+VER013,Ajo Cabeza,Verdulería,500,250,50,UNIDAD
+ALM001,Carbón Bolsa,Almacén,2500,1600,15,UNIDAD
+ALM002,Fideo Guisero Providencia 500g,Almacén,1100,750,40,UNIDAD
+ALM003,Puré de Tomate La Huerta 520g,Almacén,950,600,35,UNIDAD
+ALM004,Aceite Girasol 900ml,Almacén,2200,1550,25,UNIDAD
+ALM005,Harina 000 1kg,Almacén,900,580,30,UNIDAD
+ALM006,Harina Leudante 1kg,Almacén,1300,850,20,UNIDAD
+ALM007,Arroz Largo Fino 1kg,Almacén,1600,1050,30,UNIDAD
+ALM008,Azúcar 1kg,Almacén,1100,720,25,UNIDAD
+ALM009,Sal Fina 500g,Almacén,700,420,20,UNIDAD
+ALM010,Mayonesa Doypack 250g,Almacén,1000,650,25,UNIDAD
+ALM011,Leche Larga Vida 1L,Almacén,1400,980,30,UNIDAD
+ALM012,Huevos Maple x30,Almacén,5200,3800,15,UNIDAD

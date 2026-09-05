@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Impulso Smart | POS{% endblock %}</title>
+    
+    <!-- CSS Core -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            --primary-color: #4318ff;
+            --primary-rgb: 67, 24, 255;
+        }
+        [data-bs-theme="light"] { --bg-body: #f4f7fe; }
+        [data-bs-theme="dark"] { --bg-body: #0b1437; }
+        body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif; background-color: var(--bg-body); }
+        .sidebar-nav .nav-link { border-radius: 12px; margin: 4px 10px; color: rgba(255,255,255,0.7); }
+        .sidebar-nav .nav-link:hover, .sidebar-nav .nav-link.active { color: #fff; background: rgba(255, 255, 255, 0.08); }
+        .color-dot { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 2px solid rgba(0,0,0,0.1); }
+        #sidebarMenu { transition: margin-left 0.3s ease; }
+        #wrapper.toggled #sidebarMenu { margin-left: -260px; }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="d-flex flex-column min-vh-100" style="overflow-x: hidden;">
+
+    <div class="d-flex" id="wrapper" style="min-height: 100vh; width: 100%; overflow-x: hidden;">
+        
+        {% if user.is_authenticated %}
+        <!-- SIDEBAR -->
+        <div class="bg-dark text-white" id="sidebarMenu" style="width: 260px; flex-shrink: 0;">
+            <div class="p-3">
+                <h5 class="fw-bold">{{ config.nombre_empresa }}</h5>
+            </div>
+            <nav class="sidebar-nav flex-grow-1 overflow-y-auto">
+                <div class="sidebar-section-title px-4 py-2 small opacity-50">Operaciones</div>
+                
+                <a class="nav-link text-white {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">
+                    <i class="bi bi-grid-1x2 me-2"></i> Dashboard
+                </a>
+                
+                <a class="nav-link text-white {% if 'pos' in request.path %}active{% endif %}" href="{% url 'sales:pos' %}">
+                    <i class="bi bi-cart3 me-2"></i> Ventas / POS
+                </a>
+
+                {% if perms.finance.view_cashsession %}
+                <a class="nav-link text-white {% if 'finance' in request.path %}active{% endif %}" href="{% url 'finance:cash_dashboard' %}">
+                    <i class="bi bi-cash-stack me-2"></i> Caja / Arqueo
+                </a>
+                {% endif %}
+
+                <a class="nav-link text-white {% if request.resolver_match.url_name == 'sale_list' %}active{% endif %}" href="{% url 'sales:sale_list' %}">
+                    <i class="bi bi-receipt me-2"></i> Historial Ventas
+                </a>
+
+                <div class="sidebar-section-title px-4 py-2 small opacity-50">Gestión Comercial</div>
+
+                {% if perms.customers.view_customer %}
+                <a class="nav-link text-white {% if 'customers' in request.path %}active{% endif %}" href="{% url 'customers:customer_list' %}">
+                    <i class="bi bi-people me-2"></i> Clientes
+                </a>
+                {% endif %}
+
+                {% if perms.products.view_product %}
+                <a class="nav-link text-white {% if 'products' in request.path %}active{% endif %}" href="{% url 'products:product_list' %}">
+                    <i class="bi bi-archive me-2"></i> Inventario
+                </a>
+                {% endif %}
+
+                <a class="nav-link text-white {% if 'categories' in request.path %}active{% endif %}" href="{% url 'products:category_list' %}">
+                    <i class="bi bi-tags me-2"></i> Categorías
+                </a>
+
+                <a class="nav-link text-white {% if 'suppliers' in request.path %}active{% endif %}" href="{% url 'suppliers:supplier_list' %}">
+                    <i class="bi bi-truck me-2"></i> Proveedores
+                </a>
+
+                <a class="nav-link text-white {% if 'purchase' in request.path %}active{% endif %}" href="{% url 'products:purchase_list' %}">
+                    <i class="bi bi-bag-plus me-2"></i> Compras y OC
+                </a>
+
+                <a class="nav-link text-white {% if 'users' in request.path %}active{% endif %}" href="{% url 'users:user_list' %}">
+                    <i class="bi bi-people-fill me-2"></i> Gestión de Usuarios
+                </a>
+
+                {% if user.is_superuser or user.groups.all.0.name == 'Administrador' %}
+                <div class="px-4 py-2 small opacity-50">CONTROL Y REPORTES</div>
+                <a class="nav-link text-white" href="{% url 'products:bi_dashboard' %}"><i class="bi bi-graph-up me-2"></i> Informes / BI</a>
+                <a class="nav-link text-white" href="{% url 'finance:fiscal_reports' %}"><i class="bi bi-file-earmark-bar-graph me-2"></i> Reportes Fiscales</a>
+                <a class="nav-link text-white" href="{% url 'products:admin_tools' %}"><i class="bi bi-shield-lock me-2"></i> Herramientas</a>
+                {% endif %}
+            </nav>
+            <div class="p-3 border-top border-white border-opacity-10">
+                <form action="{% url 'logout' %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-light w-100 rounded-pill"><i class="bi bi-box-arrow-left me-2"></i>Cerrar Sesión</button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- PAGE CONTENT WRAPPER -->
+        <main id="page-content-wrapper" style="flex-grow: 1; width: 100%; min-width: 0; padding: 1.5rem;">
+            {% if user.is_authenticated %}
+            <!-- Topbar -->
+            <nav class="navbar navbar-expand bg-white shadow-sm px-4 py-2 mb-4 d-flex align-items-center rounded-3">
+                <button class="btn btn-link p-0 me-3" id="sidebarToggle">
+                    <i class="bi bi-list fs-3"></i>
+                </button>
+                <h5 class="mb-0 fw-bold">{% block page_title %}{% endblock %}</h5>
+                <div class="ms-3 text-muted small" id="realtime-clock"></div>
+                
+                <div class="d-flex align-items-center ms-auto">
+                    <!-- Theme Toggle -->
+                    <button class="btn btn-link text-dark me-2" onclick="toggleDarkMode()">
+                        <i class="bi bi-moon-stars" id="themeIcon"></i>
+                    </button>
+                    
+                    {% if user.is_superuser or user.groups.all.0.name == 'Administrador' %}
+                    <!-- Settings -->
+                    <a href="{% url 'configuracion' %}" class="btn btn-link text-dark me-2"><i class="bi bi-gear"></i></a>
+                    {% endif %}
+
+                    {% if not user.is_superuser %}
+                        {% load custom_filters %}
+                        <span class="badge bg-warning-subtle text-warning-emphasis rounded-pill px-3 py-2 me-3">
+                            <i class="bi bi-clock-history me-1"></i> Días restantes: {{ user.date_joined|remaining_trial_days }}
+                        </span>
+                    {% endif %}
+                    <a href="/admin/" class="btn btn-secondary rounded-pill px-3">{{ user.username }}</a>
+                </div>
+            </nav>
+            {% endif %}
+            
+            <!-- Content -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <footer class="footer py-3 bg-body-tertiary border-top mt-auto">
+        <div class="container-fluid px-4">
+            <div class="d-flex justify-content-between align-items-center small opacity-75">
+                <span>&copy; 2026 Impulso Digital Sgo Todos los Derechos Reservados</span>
+                <div class="d-flex gap-3">
+                    <span class="fw-bold text-primary">Impulso Smart v1.0</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+
+
+
+    <!-- Buscador Global Modal -->
+    <div class="modal fade" id="searchModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="modal-body p-0">
+                    <div class="input-group input-group-lg border-bottom">
+                        <span class="input-group-text bg-transparent border-0"><i class="bi bi-search"></i></span>
+                        <input type="text" id="globalSearchInput" class="form-control border-0 shadow-none py-4" placeholder="Buscar productos, ventas, clientes..." autocomplete="off">
+                        <span class="input-group-text bg-transparent border-0 small text-muted">ESC para cerrar</span>
+                    </div>
+                    <div id="searchResults" class="p-2" style="max-height: 400px; overflow-y: auto;">
+                        <div class="p-4 text-center text-muted">Empieza a escribir para buscar...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Reloj en tiempo real
+        function updateClock() {
+            const now = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+            document.getElementById('realtime-clock').innerText = now.toLocaleDateString('es-AR', options);
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Toggle Sidebar
+        const sidebarToggle = document.getElementById("sidebarToggle");
+        if (sidebarToggle) {
+            sidebarToggle.addEventListener("click", function(e) {
+                e.preventDefault();
+                document.getElementById("wrapper").classList.toggle("toggled");
+            });
+        }
+
+
+        // Theme & Color Management
+        function setTheme(theme) {
+            document.documentElement.setAttribute('data-bs-theme', theme);
+            localStorage.setItem('theme', theme);
+            
+            // Sincronizar switch de sidebar
+            const switchSidebar = document.getElementById('darkModeSidebar');
+            if (switchSidebar) {
+                switchSidebar.checked = (theme === 'dark');
+            }
+
+            const btnLight = document.getElementById('btn-theme-light');
+            const btnDark = document.getElementById('btn-theme-dark');
+            if (btnLight && btnDark) {
+                btnLight.classList.toggle('active', theme === 'light');
+                btnDark.classList.toggle('active', theme === 'dark');
+            }
+        }
+
+        function toggleDarkMode() {
+            const currentTheme = document.documentElement.getAttribute('data-bs-theme');
+            setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+        }
+
+        function setPrimaryColor(hex, rgb, element) {
+            document.documentElement.style.setProperty('--primary-color', hex);
+            document.documentElement.style.setProperty('--primary-rgb', rgb);
+            localStorage.setItem('primaryColor', hex);
+            localStorage.setItem('primaryRGB', rgb);
+
+            document.querySelectorAll('.color-dot').forEach(dot => dot.classList.remove('active'));
+            if (element) {
+                element.classList.add('active');
+            } else {
+                document.querySelectorAll('.color-dot').forEach(dot => {
+                    const bgColor = dot.style.backgroundColor;
+                    if (bgColor.includes(hex) || bgColor.replace(/\s/g, '').includes('rgb(' + rgb + ')')) {
+                        dot.classList.add('active');
+                    }
+                });
+            }
+        }
+
+        // Global Search Logic
+        let searchModal;
+        function openSearch() {
+            if (!searchModal) {
+                searchModal = new bootstrap.Modal(document.getElementById('searchModal'));
+            }
+            searchModal.show();
+            setTimeout(() => document.getElementById('globalSearchInput').focus(), 500);
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'k') {
+                e.preventDefault();
+                openSearch();
+            }
+        });
+
+        document.getElementById('globalSearchInput').addEventListener('input', function(e) {
+            const q = e.target.value;
+            const resultsContainer = document.getElementById('searchResults');
+            if (q.length < 2) {
+                resultsContainer.innerHTML = '<div class="p-4 text-center text-muted">Empieza a escribir para buscar...</div>';
+                return;
+            }
+
+            fetch(`/search/?q=${q}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.results.length === 0) {
+                        resultsContainer.innerHTML = '<div class="p-4 text-center text-muted">No se encontraron resultados.</div>';
+                        return;
+                    }
+                    resultsContainer.innerHTML = data.results.map(r => `
+                        <a href="${r.url}" class="d-flex align-items-center p-3 text-decoration-none border-bottom hover-bg-light">
+                            <div class="bg-primary-subtle p-2 rounded-3 me-3">
+                                <i class="bi ${r.icon} text-primary"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold text-body">${r.title}</div>
+                                <div class="small text-muted">${r.category}</div>
+                            </div>
+                            <i class="bi bi-chevron-right ms-auto text-muted"></i>
+                        </a>
+                    `).join('');
+                });
+        });
+
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            const savedColor = localStorage.getItem('primaryColor') || '#4318ff';
+            const savedRGB = localStorage.getItem('primaryRGB') || '67, 24, 255';
+            
+            setTheme(savedTheme);
+            setPrimaryColor(savedColor, savedRGB);
+        })();
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
