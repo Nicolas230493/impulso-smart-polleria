@@ -4,3 +4,6 @@ django-widget-tweaks
 python-dotenv
 pandas
 openpyxl
+
+whitenoise
+gunicorn
