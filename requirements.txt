@@ -8,3 +8,5 @@ openpyxl
 whitenoise
 gunicorn
 python-barcode
+dj-database-url
+psycopg2-binary
