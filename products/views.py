@@ -498,7 +498,7 @@ def export_inventory_csv(request):
 
 @login_required
 def import_inventory_csv(request):
-    """Importa inventario desde un archivo CSV."""
+    """Importa inventario desde un archivo CSV con manejo robusto de errores."""
     if request.method == 'POST':
         form = CSVImportForm(request.POST, request.FILES)
         if form.is_valid():
@@ -506,37 +506,98 @@ def import_inventory_csv(request):
             if not csv_file.name.endswith('.csv'):
                 messages.error(request, 'El archivo no es un CSV.')
                 return redirect('products:product_list')
+
+            # Intenta decodificar con diferentes codificaciones
+            decoded_file = None
+            for encoding in ['utf-8-sig', 'utf-8', 'latin-1']:
+                try:
+                    csv_file.seek(0)
+                    decoded_file = csv_file.read().decode(encoding)
+                    break
+                except UnicodeDecodeError:
+                    continue
             
-            data_set = csv_file.read().decode('utf-8')
-            io_string = io.StringIO(data_set)
-            
-            # Saltar encabezado
-            next(io_string)
-            
+            if decoded_file is None:
+                messages.error(request, 'No se pudo decodificar el archivo CSV. Asegúrate de que esté en UTF-8 o Latin-1.')
+                return redirect('products:product_list')
+
+            io_string = io.StringIO(decoded_file)
             reader = csv.reader(io_string, delimiter=',', quotechar='"')
-            imported_count = 0
             
-            for row in reader:
-                if len(row) < 7: continue
-                # Nombre, Código, Categoría, Precio Venta, Precio Costo, Stock, Unidad Medida
-                name, sku, category_name, price, cost_price, stock, unit = row
+            # Limpiar y mapear encabezados
+            try:
+                headers = [h.strip().lower() for h in next(reader)]
+            except StopIteration:
+                messages.error(request, 'El archivo CSV está vacío.')
+                return redirect('products:product_list')
                 
-                category, _ = Category.objects.get_or_create(name=category_name)
-                
-                Product.objects.update_or_create(
-                    sku=sku,
-                    defaults={
-                        'name': name,
-                        'category': category,
-                        'price': Decimal(price),
-                        'cost_price': Decimal(cost_price),
-                        'stock': Decimal(stock),
-                        'unit': unit.lower()
-                    }
-                )
-                imported_count += 1
-                
-            messages.success(request, f"Importación exitosa: {imported_count} productos.")
+            # Mapeo simple: ajusta según las columnas de tu CSV
+            # Esperado: nombre, codigo_barras/sku, precio/precio_venta, costo/precio_costo, stock, categoria, unidad
+            mapping = {
+                'nombre': 'name',
+                'codigo': 'sku',
+                'codigo_barras': 'sku',
+                'sku': 'sku',
+                'precio': 'price',
+                'precio_venta': 'price',
+                'costo': 'cost_price',
+                'precio_costo': 'cost_price',
+                'stock': 'stock',
+                'categoria': 'category',
+                'unidad': 'unit'
+            }
+            
+            col_indices = {}
+            for i, h in enumerate(headers):
+                if h in mapping:
+                    col_indices[mapping[h]] = i
+            
+            required_fields = ['name', 'sku', 'price', 'cost_price', 'stock', 'category']
+            if not all(field in col_indices for field in required_fields):
+                messages.error(request, f'El CSV no tiene las columnas necesarias. Se encontraron: {headers}')
+                return redirect('products:product_list')
+
+            imported_count = 0
+            errors_count = 0
+            
+            def clean_numeric(value):
+                if isinstance(value, str):
+                    value = value.replace('$', '').replace(',', '.').strip()
+                return Decimal(value)
+
+            for i, row in enumerate(reader, start=2):
+                try:
+                    # Extraer datos usando el mapeo
+                    name = row[col_indices['name']]
+                    sku = row[col_indices['sku']]
+                    price = clean_numeric(row[col_indices['price']])
+                    cost_price = clean_numeric(row[col_indices['cost_price']])
+                    stock = clean_numeric(row[col_indices['stock']])
+                    category_name = row[col_indices['category']]
+                    unit = row[col_indices.get('unit', 6)].strip().lower() if len(row) > col_indices.get('unit', 6) else 'unidad'
+                    
+                    category, _ = Category.objects.get_or_create(name=category_name.strip())
+                    
+                    Product.objects.update_or_create(
+                        sku=sku,
+                        defaults={
+                            'name': name.strip(),
+                            'category': category,
+                            'price': price,
+                            'cost_price': cost_price,
+                            'stock': stock,
+                            'unit': unit
+                        }
+                    )
+                    imported_count += 1
+                except Exception as e:
+                    errors_count += 1
+                    messages.error(request, f"Error en fila {i}: {str(e)}")
+            
+            if imported_count > 0:
+                messages.success(request, f"Importación exitosa: {imported_count} productos.")
+            if errors_count > 0:
+                messages.warning(request, f"Hubo {errors_count} errores durante la importación.")
             return redirect('products:product_list')
     return redirect('products:product_list')
 
